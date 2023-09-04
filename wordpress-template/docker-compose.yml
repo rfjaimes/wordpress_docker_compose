@@ -1,0 +1,43 @@
+version: '3'
+
+networks:
+  web:
+    external: true
+  internal:
+    external:
+      name: wordpress-docker-compose_internal
+
+
+services:
+  wp-mysite:
+    image: wordpress:6.2-php8.2-apache # https://hub.docker.com/_/wordpress/
+    volumes:
+      - ./config/php.conf.ini:/usr/local/etc/php/conf.d/conf.ini
+      - ./wp-app:/var/www/html
+    environment:
+      WORDPRESS_DB_HOST: db
+      WORDPRESS_DB_NAME: "${DB_NAME}"
+      WORDPRESS_DB_USER: root
+      WORDPRESS_DB_PASSWORD: "${DB_ROOT_PASSWORD}"
+    networks:
+      - internal
+      - web
+    labels:
+      - traefik.backend=wp-mysite
+      - traefik.frontend.rule=Host:myserver.com,www.myserver.com
+      - traefik.docker.network=web
+      - traefik.port=80
+    restart: always
+
+  wpcli:
+    image: wordpress:cli
+    volumes:
+      - ./config/php.conf.ini:/usr/local/etc/php/conf.d/conf.ini
+      - ./wp-app:/var/www/html
+    depends_on:
+      - wp-mysite
+    labels:
+      - traefik.enable=false
+    networks:
+      - internal
+
